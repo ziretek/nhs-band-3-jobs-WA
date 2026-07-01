@@ -1,0 +1,10 @@
+# Secrets
+outputs/email_tool/email.env
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
