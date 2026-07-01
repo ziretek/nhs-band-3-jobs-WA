@@ -7,9 +7,16 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.request
 import urllib.parse
 import urllib.error
+
+
+CALLMEBOT_CHUNK_SIZE = 800
+CALLMEBOT_DELAY_SECONDS = 10
+CALLMEBOT_MAX_ATTEMPTS = 3
+RETRYABLE_HTTP_CODES = {403, 429, 500, 502, 503, 504}
 
 
 def send_via_callmebot(phone: str, apikey: str, body: str) -> dict:
@@ -20,7 +27,14 @@ def send_via_callmebot(phone: str, apikey: str, body: str) -> dict:
         "apikey": apikey,
     })
     url = f"https://api.callmebot.com/whatsapp.php?{params}"
-    request = urllib.request.Request(url, method="GET")
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "text/html,*/*",
+            "User-Agent": "Mozilla/5.0 NHS-Jobs-WhatsApp-Alert/1.0",
+        },
+        method="GET",
+    )
     with urllib.request.urlopen(request, timeout=30) as response:
         return {"status": response.status, "body": response.read().decode("utf-8")}
 
@@ -44,19 +58,22 @@ def send_via_cloud_api(access_token: str, phone_number_id: str, to: str, body: s
 
 
 def chunk_text(text: str, max_len: int = 4096) -> list[str]:
-    """Split long text into message-safe chunks."""
-    if len(text) <= max_len:
-        return [text]
-    chunks = []
-    current = ""
-    for line in text.split("\n"):
-        if len(current) + len(line) + 1 > max_len:
-            chunks.append(current)
-            current = line
-        else:
-            current = f"{current}\n{line}" if current else line
-    if current:
-        chunks.append(current)
+    """Split text at natural boundaries without exceeding max_len."""
+    remaining = text.strip()
+    chunks: list[str] = []
+
+    while len(remaining) > max_len:
+        split_at = remaining.rfind("\n", 0, max_len + 1)
+        if split_at <= 0:
+            split_at = remaining.rfind(" ", 0, max_len + 1)
+        if split_at <= 0:
+            split_at = max_len
+
+        chunks.append(remaining[:split_at].rstrip())
+        remaining = remaining[split_at:].lstrip()
+
+    if remaining:
+        chunks.append(remaining)
     return chunks
 
 
@@ -97,7 +114,8 @@ def main() -> None:
         print("No message body provided.", file=sys.stderr)
         sys.exit(1)
 
-    chunks = chunk_text(body)
+    max_len = CALLMEBOT_CHUNK_SIZE if args.method == "callmebot" else 4096
+    chunks = chunk_text(body, max_len=max_len)
 
     if args.dry_run:
         print(f"[DRY RUN] Would send {len(chunks)} message(s)")
@@ -108,16 +126,46 @@ def main() -> None:
         return
 
     for i, chunk in enumerate(chunks, 1):
-        try:
-            if args.method == "callmebot":
-                result = send_via_callmebot(args.phone, args.apikey, chunk)
-                print(f"Sent chunk {i}/{len(chunks)} — status: {result['status']}")
-            else:
+        if args.method == "callmebot":
+            for attempt in range(1, CALLMEBOT_MAX_ATTEMPTS + 1):
+                try:
+                    result = send_via_callmebot(args.phone, args.apikey, chunk)
+                    print(f"Sent chunk {i}/{len(chunks)} — status: {result['status']}")
+                    break
+                except urllib.error.HTTPError as e:
+                    error_body = e.read().decode("utf-8", errors="replace")
+                    if e.code not in RETRYABLE_HTTP_CODES or attempt == CALLMEBOT_MAX_ATTEMPTS:
+                        print(f"Failed chunk {i}: HTTP {e.code} — {error_body}", file=sys.stderr)
+                        sys.exit(1)
+                    delay = CALLMEBOT_DELAY_SECONDS * attempt
+                    print(
+                        f"CallMeBot returned HTTP {e.code} for chunk {i}; "
+                        f"retrying in {delay}s ({attempt}/{CALLMEBOT_MAX_ATTEMPTS}).",
+                        file=sys.stderr,
+                    )
+                    time.sleep(delay)
+                except urllib.error.URLError as e:
+                    if attempt == CALLMEBOT_MAX_ATTEMPTS:
+                        print(f"Failed chunk {i}: {e.reason}", file=sys.stderr)
+                        sys.exit(1)
+                    delay = CALLMEBOT_DELAY_SECONDS * attempt
+                    print(
+                        f"CallMeBot connection failed for chunk {i}; "
+                        f"retrying in {delay}s ({attempt}/{CALLMEBOT_MAX_ATTEMPTS}).",
+                        file=sys.stderr,
+                    )
+                    time.sleep(delay)
+
+            # CallMeBot rate-limits requests, including requests from separate
+            # workflow steps, so pause after the final chunk as well.
+            time.sleep(CALLMEBOT_DELAY_SECONDS)
+        else:
+            try:
                 result = send_via_cloud_api(args.access_token, args.phone_number_id, args.to, chunk)
                 print(f"Sent chunk {i}/{len(chunks)} — ID: {result.get('messages', [{}])[0].get('id', 'unknown')}")
-        except urllib.error.HTTPError as e:
-            print(f"Failed chunk {i}: HTTP {e.code} — {e.read().decode('utf-8', errors='replace')}", file=sys.stderr)
-            sys.exit(1)
+            except urllib.error.HTTPError as e:
+                print(f"Failed chunk {i}: HTTP {e.code} — {e.read().decode('utf-8', errors='replace')}", file=sys.stderr)
+                sys.exit(1)
 
 
 if __name__ == "__main__":
