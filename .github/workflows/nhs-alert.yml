@@ -38,6 +38,18 @@ jobs:
             --output outputs/band_4_notification.txt \
             --html-output outputs/band_4_notification.html
 
+      - name: Scrape Band 5 NHS jobs
+        run: |
+          python3 work/nhs_today_alert.py \
+            --pay-band "BAND_5" \
+            --alert-title "NHS Band 5 permanent full-time visa sponsorship alert" \
+            --heading "Band 5 permanent full-time visa sponsorship jobs" \
+            --search-label "Band 5 NHS Jobs" \
+            --search-link-label "NHS Jobs Band 5 visa sponsorship search" \
+            --salary-label "Salary/Band" \
+            --output outputs/band_5_notification.txt \
+            --html-output outputs/band_5_notification.html
+
       - name: Send Band 3 results via Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -53,3 +65,11 @@ jobs:
         run: |
           python3 work/send_telegram.py \
             --body-file outputs/band_4_notification.txt
+
+      - name: Send Band 5 results via Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 work/send_telegram.py \
+            --body-file outputs/band_5_notification.txt
