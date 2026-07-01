@@ -24,18 +24,17 @@ jobs:
             --output outputs/todays_nhs_notification.txt \
             --html-output outputs/todays_nhs_notification.html
 
-      - name: Scrape Healthcare Assistant NHS jobs
+      - name: Scrape Band 4 NHS jobs
         run: |
           python3 work/nhs_today_alert.py \
-            --keyword "healthcare assistant" \
-            --pay-band "" \
-            --alert-title "NHS Healthcare Assistant visa sponsorship alert" \
-            --heading "Active Healthcare Assistant visa sponsorship jobs" \
-            --search-label "Healthcare Assistant NHS Jobs" \
-            --search-link-label "NHS Jobs healthcare assistant sponsorship search" \
-            --salary-label "Salary" \
-            --output outputs/healthcare_assistant_notification.txt \
-            --html-output outputs/healthcare_assistant_notification.html
+            --pay-band "BAND_4" \
+            --alert-title "NHS Band 4 visa sponsorship alert" \
+            --heading "Band 4 visa sponsorship jobs" \
+            --search-label "Band 4 NHS Jobs" \
+            --search-link-label "NHS Jobs Band 4 visa sponsorship search" \
+            --salary-label "Salary/Band" \
+            --output outputs/band_4_notification.txt \
+            --html-output outputs/band_4_notification.html
 
       - name: Send Band 3 results via Telegram
         env:
@@ -45,10 +44,10 @@ jobs:
           python3 work/send_telegram.py \
             --body-file outputs/todays_nhs_notification.txt
 
-      - name: Send Healthcare Assistant results via Telegram
+      - name: Send Band 4 results via Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python3 work/send_telegram.py \
-            --body-file outputs/healthcare_assistant_notification.txt
+            --body-file outputs/band_4_notification.txt
