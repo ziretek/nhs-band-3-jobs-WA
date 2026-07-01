@@ -1,6 +1,6 @@
-# NHS Band 3 Jobs with Visa Sponsorship — WhatsApp Alert
+# NHS Band 3 Jobs with Visa Sponsorship — Telegram Alert
 
-Searches NHS Jobs daily for Band 3 positions that welcome Skilled Worker visa sponsorship, then sends the results to your WhatsApp.
+Searches NHS Jobs daily for Band 3 positions that welcome Skilled Worker visa sponsorship, then sends the results to Telegram.
 
 ## How it works
 
@@ -8,16 +8,17 @@ Searches NHS Jobs daily for Band 3 positions that welcome Skilled Worker visa sp
    - Band 3 roles with "visa sponsorship" keyword
    - Healthcare Assistant roles (all bands)
 2. **Filters** — excludes listings that say sponsorship is unavailable or require existing right to work
-3. **Sends** results to your WhatsApp via CallMeBot
+3. **Sends** results to your Telegram account through a private bot
 
 ## One-time setup
 
-### 1. Set up CallMeBot (free, no API keys)
+### 1. Create a Telegram bot
 
-1. Open WhatsApp on your phone
-2. Send a message to **+34 632 50 06 78**
-3. Message must be exactly: `I allow callmebot to send me messages`
-4. You'll receive a reply with your **API key** — save it
+1. Open Telegram and start a chat with **@BotFather**.
+2. Send `/newbot` and follow the prompts.
+3. Save the bot token BotFather gives you.
+4. Open your new bot and send it `/start` so it is allowed to message you.
+5. Send another message such as `hello`, then open `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates` and copy the numeric `message.chat.id` value.
 
 ### 2. Add secrets to GitHub
 
@@ -25,8 +26,8 @@ Go to **Settings → Secrets and variables → Actions → New repository secret
 
 | Secret | Value |
 |--------|-------|
-| `CALLMEBOT_PHONE` | Your phone number with country code. For a UK number: `447123456789` (omit the + and spaces) |
-| `CALLMEBOT_APIKEY` | The API key you received from CallMeBot |
+| `TELEGRAM_BOT_TOKEN` | The token received from BotFather |
+| `TELEGRAM_CHAT_ID` | The numeric chat ID returned by `getUpdates` |
 
 ### 3. Run it
 
@@ -38,6 +39,7 @@ Go to **Settings → Secrets and variables → Actions → New repository secret
 | Path | Purpose |
 |------|---------|
 | `work/nhs_today_alert.py` | NHS Jobs scraper for visa sponsorship roles |
-| `work/send_whatsapp.py` | WhatsApp sender (supports CallMeBot & Cloud API) |
+| `work/send_telegram.py` | Telegram Bot API sender |
+| `work/send_whatsapp.py` | Legacy WhatsApp sender |
 | `outputs/email_tool/send_email.py` | Alternative email sender (SMTP) |
 | `.github/workflows/nhs-alert.yml` | GitHub Actions scheduled workflow |

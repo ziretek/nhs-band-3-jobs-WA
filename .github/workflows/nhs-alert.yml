@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -37,18 +37,18 @@ jobs:
             --output outputs/healthcare_assistant_notification.txt \
             --html-output outputs/healthcare_assistant_notification.html
 
-      - name: Send Band 3 results via WhatsApp (CallMeBot)
+      - name: Send Band 3 results via Telegram
         env:
-          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
-          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python3 work/send_whatsapp.py \
+          python3 work/send_telegram.py \
             --body-file outputs/todays_nhs_notification.txt
 
-      - name: Send Healthcare Assistant results via WhatsApp (CallMeBot)
+      - name: Send Healthcare Assistant results via Telegram
         env:
-          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
-          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python3 work/send_whatsapp.py \
+          python3 work/send_telegram.py \
             --body-file outputs/healthcare_assistant_notification.txt
