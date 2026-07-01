@@ -17,12 +17,11 @@ from dataclasses import dataclass
 BASE = "https://www.jobs.nhs.uk"
 TODAY = dt.date.today()
 POSITIVE_PATTERNS = [
-    r"applications from job seekers who require current skilled worker sponsorship.*?welcome",
-    r"applications from individuals who require a skilled worker sponsorship.*?welcome",
     r"this role is eligible for visa sponsorship",
     r"role is eligible for visa sponsorship",
     r"eligible for visa sponsorship under",
     r"health and care worker visa",
+    r"(?:trust|employer|organisation) has agreed that they will sponsor you as a skilled worker",
 ]
 
 NEGATIVE_PATTERNS = [
@@ -34,6 +33,11 @@ NEGATIVE_PATTERNS = [
     r"applicants must already have the right to work",
     r"will not be able to sponsor",
     r"not able to sponsor",
+    r"does not meet.{0,160}skilled worker visa",
+    r"(?:would|will) not be able to (?:issue|offer|provide).{0,80}(?:certificate of sponsorship|visa sponsorship|sponsorship)",
+    r"(?:cannot|can't|can not) offer.{0,40}(?:visa )?sponsorship",
+    r"only able to sponsor.{0,100}band 5 and above",
+    r"sponsorship.{0,40}not guaranteed",
     r"unfortunately ineligible to apply",
     r"requires? current skilled worker sponsorship.*?ineligible",
     r"requiring current skilled worker sponsorship.*?ineligible",

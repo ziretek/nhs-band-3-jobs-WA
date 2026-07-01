@@ -7,7 +7,7 @@ Searches NHS Jobs daily for permanent, full-time Band 3 and Band 4 positions tha
 1. **Scrapes** `nhs_today_alert.py` scans [NHS Jobs](https://www.jobs.nhs.uk) for:
    - Band 3 roles with "visa sponsorship" keyword
    - Band 4 roles with "visa sponsorship" keyword
-2. **Filters** — requires a permanent contract and a working pattern that includes full-time, then excludes listings that say sponsorship is unavailable or require existing right to work
+2. **Filters** — requires a permanent contract and a working pattern that includes full-time, then excludes listings that deny or cannot guarantee sponsorship. Generic NHS sponsorship boilerplate is not treated as proof that a role is eligible.
 3. **Sends** results to your Telegram account through a private bot
 
 ## One-time setup
