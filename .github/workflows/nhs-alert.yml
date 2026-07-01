@@ -2,10 +2,8 @@ name: NHS Daily Alert
 
 on:
   schedule:
-    # Runs daily at 8:00 AM UTC (adjust as needed)
     - cron: "0 8 * * *"
   workflow_dispatch:
-    # Allows manual trigger from GitHub UI
 
 jobs:
   scrape-and-send:
@@ -19,9 +17,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install --no-cache-dir requests
 
       - name: Scrape Band 3 NHS jobs
         run: |
@@ -42,20 +37,18 @@ jobs:
             --output outputs/healthcare_assistant_notification.txt \
             --html-output outputs/healthcare_assistant_notification.html
 
-      - name: Send Band 3 results via WhatsApp
+      - name: Send Band 3 results via WhatsApp (CallMeBot)
         env:
-          WA_ACCESS_TOKEN: ${{ secrets.WA_ACCESS_TOKEN }}
-          WA_PHONE_NUMBER_ID: ${{ secrets.WA_PHONE_NUMBER_ID }}
-          WA_TO: ${{ secrets.WA_TO }}
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
         run: |
           python3 work/send_whatsapp.py \
             --body-file outputs/todays_nhs_notification.txt
 
-      - name: Send Healthcare Assistant results via WhatsApp
+      - name: Send Healthcare Assistant results via WhatsApp (CallMeBot)
         env:
-          WA_ACCESS_TOKEN: ${{ secrets.WA_ACCESS_TOKEN }}
-          WA_PHONE_NUMBER_ID: ${{ secrets.WA_PHONE_NUMBER_ID }}
-          WA_TO: ${{ secrets.WA_TO }}
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
         run: |
           python3 work/send_whatsapp.py \
             --body-file outputs/healthcare_assistant_notification.txt
