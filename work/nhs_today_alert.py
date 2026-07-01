@@ -46,6 +46,8 @@ class Job:
     employer: str
     location: str
     salary: str
+    contract: str
+    working_pattern: str
     date_posted: str
     closing_date: str
     url: str
@@ -192,6 +194,26 @@ def parse_title(page: str) -> str:
     return clean(match.group(1)) if match else ""
 
 
+def extract_contract(page: str) -> str:
+    match = re.search(r'id="contract_type"[^>]*>(.*?)</p>', page, flags=re.I | re.S)
+    return clean(match.group(1)) if match else ""
+
+
+def extract_working_pattern(page: str) -> str:
+    match = re.search(
+        r'id="working_pattern_heading"[^>]*>.*?</h3>\s*<p[^>]*>(.*?)</p>',
+        page,
+        flags=re.I | re.S,
+    )
+    return clean(match.group(1)) if match else ""
+
+
+def is_permanent_full_time(contract: str, working_pattern: str) -> bool:
+    return contract.casefold() == "permanent" and bool(
+        re.search(r"\bfull[-\s]*time\b", working_pattern, flags=re.I)
+    )
+
+
 def find_jobs(max_pages: int, max_details: int, config: AlertConfig) -> list[Job]:
     candidates: list[dict[str, str]] = []
     seen_urls: set[str] = set()
@@ -214,6 +236,12 @@ def find_jobs(max_pages: int, max_details: int, config: AlertConfig) -> list[Job
         text = page_text(detail)
         if "this job is now closed" in text.lower():
             continue
+
+        contract = extract_contract(detail)
+        working_pattern = extract_working_pattern(detail)
+        if not is_permanent_full_time(contract, working_pattern):
+            continue
+
         if has_negative_sponsorship(text):
             continue
 
@@ -231,6 +259,8 @@ def find_jobs(max_pages: int, max_details: int, config: AlertConfig) -> list[Job
                 employer=candidate["employer"],
                 location=candidate["location"],
                 salary=candidate["salary"],
+                contract=contract,
+                working_pattern=working_pattern,
                 date_posted=candidate["date_posted"],
                 closing_date=candidate["closing_date"],
                 url=candidate["url"],
@@ -252,12 +282,12 @@ def render_text_email(jobs: list[Job], config: AlertConfig) -> str:
     if not jobs:
         lines.extend(
             [
-                f"No clear open {config.search_label} matches with positive visa/Skilled Worker sponsorship wording were found today.",
+                f"No clear open permanent, full-time {config.search_label} matches with positive visa/Skilled Worker sponsorship wording were found today.",
                 "",
                 "Search checked:",
                 search_url,
                 "",
-                "Note: I excluded listings that explicitly said sponsorship is unavailable, not eligible, or requires existing right to work.",
+                "Note: I excluded non-permanent, part-time-only, and no-sponsorship listings.",
             ]
         )
         return "\n".join(lines)
@@ -271,6 +301,8 @@ def render_text_email(jobs: list[Job], config: AlertConfig) -> str:
                 f"Employer: {job.employer}",
                 f"Location: {job.location}",
                 f"{config.salary_label}: {job.salary}",
+                f"Contract: {job.contract}",
+                f"Working pattern: {job.working_pattern}",
                 f"Date posted: {job.date_posted}",
                 f"Closing date: {job.closing_date}",
                 f"Sponsorship evidence: {job.evidence}",
@@ -319,6 +351,14 @@ def render_job_card(job: Job, index: int) -> str:
             <strong>{escape(job.salary)}</strong>
           </div>
           <div>
+            <span class="label">Contract</span>
+            <strong>{escape(job.contract)}</strong>
+          </div>
+          <div>
+            <span class="label">Working pattern</span>
+            <strong>{escape(job.working_pattern)}</strong>
+          </div>
+          <div>
             <span class="label">Posted</span>
             <strong>{escape(job.date_posted)}</strong>
           </div>
@@ -346,8 +386,8 @@ def render_html_email(jobs: list[Job], config: AlertConfig) -> str:
         cards = f"""
       <section class="empty-state">
         <h2>No clear open matches today</h2>
-        <p>No {escape(config.search_label)} listings with positive visa or Skilled Worker sponsorship wording were found.</p>
-        <p class="muted">Listings that said sponsorship is unavailable, not eligible, or require existing right to work were excluded.</p>
+        <p>No permanent, full-time {escape(config.search_label)} listings with positive visa or Skilled Worker sponsorship wording were found.</p>
+        <p class="muted">Non-permanent, part-time-only, and no-sponsorship listings were excluded.</p>
         <a class="secondary-link" href="{escape(search_url)}">Open the NHS Jobs search</a>
       </section>
         """
@@ -590,7 +630,7 @@ def render_html_email(jobs: list[Job], config: AlertConfig) -> str:
         </section>
         <footer class="footer">
           Search checked: <a href="{escape(search_url)}">{escape(config.search_link_label)}</a><br>
-          Listings with explicit no-sponsorship or existing-right-to-work wording were excluded.
+          Only permanent roles offering full-time work are included. Listings with explicit no-sponsorship or existing-right-to-work wording were excluded.
         </footer>
       </main>
     </div>

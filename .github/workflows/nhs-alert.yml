@@ -21,6 +21,8 @@ jobs:
       - name: Scrape Band 3 NHS jobs
         run: |
           python3 work/nhs_today_alert.py \
+            --alert-title "NHS Band 3 permanent full-time visa sponsorship alert" \
+            --heading "Band 3 permanent full-time visa sponsorship jobs" \
             --output outputs/todays_nhs_notification.txt \
             --html-output outputs/todays_nhs_notification.html
 
@@ -28,8 +30,8 @@ jobs:
         run: |
           python3 work/nhs_today_alert.py \
             --pay-band "BAND_4" \
-            --alert-title "NHS Band 4 visa sponsorship alert" \
-            --heading "Band 4 visa sponsorship jobs" \
+            --alert-title "NHS Band 4 permanent full-time visa sponsorship alert" \
+            --heading "Band 4 permanent full-time visa sponsorship jobs" \
             --search-label "Band 4 NHS Jobs" \
             --search-link-label "NHS Jobs Band 4 visa sponsorship search" \
             --salary-label "Salary/Band" \
